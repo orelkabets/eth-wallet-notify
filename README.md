@@ -7,7 +7,7 @@
  A sample "replacement" to bitcoind wallet-notify logic , 
  Using [web3](https://github.com/ethereum/web3.js/) with [Node 8+](https://nodejs.org/en/).
  
- Tested on windows and ubuntu 18.04, using local [parity](https://github.com/paritytech/parity-ethereum/releases/tag/v2.1.10) full node.
+ Tested on windows and ubuntu 18.04, using local [parity](https://github.com/paritytech/parity-ethereum/releases/tag/v2.1.10) with Ropsten testnet.
  
  you can use infura node, but first change the code to get your wanted account list.
  check out [config.js](https://github.com/orelkabets/eth-wallet-notify/blob/master/config.js)
