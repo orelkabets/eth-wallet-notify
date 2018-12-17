@@ -14,15 +14,11 @@
  
 ## Requirements
 - [Node 8+](https://nodejs.org/en/)
-- [Yarn (optional)](https://yarnpkg.com/en/)
 
 ## Setup
 ```
 npm install
 npm start
-
-or 
-yarn install
 ```
 
 
