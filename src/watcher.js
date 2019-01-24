@@ -39,7 +39,9 @@ function  TraceInternalContractTransactions() {
                                         if (accounts.indexOf(toAddress) != -1) {
                                             var amount = action.value;
                                             if (amount != null) {
-                                                NotifyTxEther(txHash);
+                                                console.log('Found incoming Ether transaction from ' + action.from + ' to ' + action.to);
+                                                console.log('Transaction value is: ' + web3.utils.fromWei(amount));
+                                                console.log('Transaction hash is: ' + txHash + '\n');
                                             }
                                         }
                                     }
