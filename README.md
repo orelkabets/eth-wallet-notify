@@ -2,6 +2,7 @@
 - Track wallet accounts.
 - Track wanted Erc20 token transfer.
 - Track block number for confirmations count.
+- Track internal transactions.
 
 ## General Description
  A sample "replacement" to bitcoind wallet-notify logic , 
