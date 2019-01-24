@@ -1,18 +1,81 @@
 const Web3 = require('web3');
 const Web3WsProvider = require('web3-providers-ws');
 const validator = require('./validate').validator;
+const NotifyTxEther = require('./notify').NotifyTxEther;
+const NotifyTxToken = require('./notify').NotifyTxToken;
+const NotifyLatestBlock = require('./notify').NotifyLatestBlock;
 const TOKEN_ABI = require('./abi');
 const conf = require('../config');
+const BaseAccount = process.env.HOT_WALLET;
 
+
+function filterBaseAccount(item) {
+    return item.toLowerCase() !== BaseAccount.toLowerCase();
+}
+
+function  TraceInternalContractTransactions() {
+    try{
+        const WSprovider = new Web3WsProvider(conf.WS_URL);
+        const web3 = new Web3(WSprovider);
+        const web3Http = new Web3(new Web3.providers.HttpProvider(conf.RPC_URL));
+
+        web3Http.providers.HttpProvider.prototype.sendAsync = web3Http.providers.HttpProvider.prototype.send;
+        setInterval(() => {
+            validator.getDepositAccounts().then(accounts => {
+                if (accounts !== undefined){
+                    web3Http.currentProvider.sendAsync({
+                        method: "trace_block",
+                        params: ['latest'],
+                        jsonrpc: "2.0",
+                        id: "2"
+                    }, (err, result) => {
+                        if (result != null) {
+                            if (result.result.length > 0) {
+                                result.result.forEach((item) => {
+                                    let action = item.action;
+                                    let txHash = item.transactionHash;
+                                    if (action != null && action.to != null) {
+                                        var toAddress = action.to;
+                                        if (accounts.indexOf(toAddress) != -1) {
+                                            var amount = action.value;
+                                            if (amount != null) {
+                                                NotifyTxEther(txHash);
+                                            }
+                                        }
+                                    }
+                                });
+
+                            }
+                        }
+
+                    });
+                    }
+
+        });
+
+        },2000);
+
+
+    }catch (err) {
+      var e = err;
+    }
+}
 
 
 
 function watchEtherTransfers() {
     try {
-        const web3 = new Web3(new Web3WsProvider(conf.WS_URL));
+        // Instantiate web3 with WebSocket provider
+        // Instantiate web3 with HttpProvider
+        const WSprovider = new Web3WsProvider(conf.WS_URL);
+        const web3 = new Web3(WSprovider);
         const web3Http = new Web3(new Web3.providers.HttpProvider(conf.RPC_URL));
 
-        // Instantiate subscription object
+
+
+        let prevTxHash = "";
+// Instantiate subscription object
+
         const subscription = web3.eth.subscribe('pendingTransactions',async function(error, txHash){
             if (!error) {
                 try {
@@ -25,9 +88,14 @@ function watchEtherTransfers() {
                             // If transaction is not valid, simply return
                             if (!valid) return;
 
+
+                            if (prevTxHash !== txHash){
                                 console.log('Found incoming Ether transaction from ' + trx.from + ' to ' + trx.to);
                                 console.log('Transaction value is: ' + web3.utils.fromWei(trx.value));
                                 console.log('Transaction hash is: ' + txHash + '\n');
+                                NotifyTxEther(txHash);
+                                prevTxHash = txHash;
+                            }
                         }
                     }
                 }
@@ -50,8 +118,9 @@ function watchEtherTransfers() {
 }
 
 function watchTokenTransfers() {
+  // Instantiate web3 with WebSocketProvider
+
     try {
-        // Instantiate web3 with WebSocketProvider
         const web3 = new Web3(new Web3WsProvider(conf.WS_URL));
 
         validator.getDepositAccounts().then(accounts => {
@@ -68,7 +137,7 @@ function watchTokenTransfers() {
                 for (let i=0; i< conf.TOKEN_CONTRACT_ADDRESSES.length; i++) {
                     let tokenObj = conf.TOKEN_CONTRACT_ADDRESSES[i];
                     const tokenContract = new web3.eth.Contract(
-                        TOKEN_ABI, tokenObj.contractAddress,
+                        TOKEN_ABI, tokenObj.addr,
                         (error, result) => { if (error) console.log(error) }
                     );
                     tokenContract.events.Transfer(options, async (error, event) => {
@@ -78,6 +147,7 @@ function watchTokenTransfers() {
                         }
                         if (event!= null && prevTxHash !== event.transactionHash){
                             console.log('Token Transaction hash is: ' + event.transactionHash + '\n');
+                            NotifyTxToken(event.transactionHash, tokenObj.token);
                             prevTxHash = event.transactionHash;
                         }
                     });
@@ -95,10 +165,15 @@ function watchLatestBlocks() {
         const web3 = new Web3(new Web3WsProvider(conf.WS_URL));
 
 
-        setTimeout(() => {
+        let previousBlockHash = "";
+        const intervalObj = setTimeout(() => {
             const subscription = web3.eth.subscribe('newBlockHeaders', function(error, result){
                 if (!error) {
                     console.log('got block:' + result.number + '\n');
+                    if (previousBlockHash !== result.hash) {
+                        NotifyLatestBlock(result.hash);
+                        previousBlockHash = result.hash;
+                    }
                 } else
                 console.error(error);
             })
@@ -114,5 +189,6 @@ function watchLatestBlocks() {
 module.exports = {
   watchEtherTransfers,
   watchTokenTransfers,
+  TraceInternalContractTransactions,
   watchLatestBlocks
 };
