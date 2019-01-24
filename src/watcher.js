@@ -1,12 +1,8 @@
 const Web3 = require('web3');
 const Web3WsProvider = require('web3-providers-ws');
 const validator = require('./validate').validator;
-const NotifyTxEther = require('./notify').NotifyTxEther;
-const NotifyTxToken = require('./notify').NotifyTxToken;
-const NotifyLatestBlock = require('./notify').NotifyLatestBlock;
 const TOKEN_ABI = require('./abi');
 const conf = require('../config');
-const BaseAccount = process.env.HOT_WALLET;
 
 
 function filterBaseAccount(item) {
@@ -94,8 +90,7 @@ function watchEtherTransfers() {
                             if (prevTxHash !== txHash){
                                 console.log('Found incoming Ether transaction from ' + trx.from + ' to ' + trx.to);
                                 console.log('Transaction value is: ' + web3.utils.fromWei(trx.value));
-                                console.log('Transaction hash is: ' + txHash + '\n');
-                                NotifyTxEther(txHash);
+                                console.log('Transaction hash is: ' + txHash + '\n');                               
                                 prevTxHash = txHash;
                             }
                         }
@@ -149,7 +144,6 @@ function watchTokenTransfers() {
                         }
                         if (event!= null && prevTxHash !== event.transactionHash){
                             console.log('Token Transaction hash is: ' + event.transactionHash + '\n');
-                            NotifyTxToken(event.transactionHash, tokenObj.token);
                             prevTxHash = event.transactionHash;
                         }
                     });
@@ -173,7 +167,6 @@ function watchLatestBlocks() {
                 if (!error) {
                     console.log('got block:' + result.number + '\n');
                     if (previousBlockHash !== result.hash) {
-                        NotifyLatestBlock(result.hash);
                         previousBlockHash = result.hash;
                     }
                 } else
